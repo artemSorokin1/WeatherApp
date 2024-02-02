@@ -3,13 +3,12 @@
 #include <zmq.hpp>
 #include <thread>
 #include <vector>
-#include "ZMQ_API.hpp"
+#include "ZMQ_API.h"
 #include <queue>
 #include <sstream>
 #include "HttpSender.hpp"
-#include "HttpParse.hpp"
+#include "HttpParse.h"
 #include <pqxx/pqxx>
-#include "DataBaseCreator.hpp"
 
 const std::string ADDRESS = "tcp://127.0.0.1:";
 const std::string HOST = "api.openweathermap.org";
@@ -17,6 +16,7 @@ const std::string API_KEY = "ec40d8bfe34acc99d20c196843061399";
 const int SERVER_CONNECTION_PORT = 8000;
 const int SERVER_RECEIVER_PORT = 5555;
 const int SERVER_SENDER_PORT = 5556;
+const int PSQL_PORT = 5432;
 
 class Server {
 public:
@@ -48,7 +48,6 @@ Server::Server()
     postSocket.bind(ADDRESS + std::to_string(SERVER_SENDER_PORT));
     serverSocket.bind(ADDRESS + std::to_string(8001));
     serverSocket.set(zmq::sockopt::sndtimeo, 2000);
-    DataBaseCreator::initDataBase();
 }
 
 void Server::connectionHandler() {
@@ -59,7 +58,7 @@ void Server::connectionHandler() {
         bool isCorrectUser = false;
         std::string messageToClient;
         if (userData.type == Types::Enter) {
-            pqxx::connection connection("dbname=USERS user=admin password=admin hostaddr=127.0.0.1 port=" + std::to_string(5432));
+            pqxx::connection connection("dbname=USERS user=admin password=admin hostaddr=127.0.0.1 port=" + std::to_string(PSQL_PORT));
             pqxx::work txn(connection);
             pqxx::result result = txn.exec("SELECT * FROM users");
             for (pqxx::result::const_iterator row = result.begin(); row != result.end(); ++row) {
@@ -71,14 +70,20 @@ void Server::connectionHandler() {
             txn.commit();
             connection.close();
         } else {
-            pqxx::connection connection("dbname=USERS user=admin password=admin hostaddr=127.0.0.1 port=" + std::to_string(5432));
+            pqxx::connection connection("dbname=USERS user=admin password=admin hostaddr=127.0.0.1 port=" + std::to_string(PSQL_PORT));
             pqxx::work txn(connection);
             pqxx::result result = txn.exec("SELECT * FROM users");
             isCorrectUser = true;
             for (pqxx::result::const_iterator row = result.begin(); row != result.end(); ++row) {
-                if (row["username"].as<std::string>() == userData.username
-                    || row["login"].as<std::string>() == userData.login) {
+                if (row["username"].as<std::string>() == userData.username) {
+                    messageToClient = "Incorrect username";
                     isCorrectUser = false;
+                    break;
+                }
+                if (row["login"].as<std::string>() == userData.login) {
+                    messageToClient = "Incorrect login";
+                    isCorrectUser = false;
+                    break;
                 }
             }
             if (isCorrectUser) {
@@ -90,8 +95,6 @@ void Server::connectionHandler() {
                 std::cout << query << '\n';
                 txn.exec(query);
 
-            } else {
-                messageToClient = "Error";
             }
             txn.commit();
             connection.close();
@@ -108,7 +111,6 @@ void Server::communicateWithClient() {
         std::string weather = HttpSender::sendHttpRequest(HOST, PATH);
         Data data;
         data.username = json["name"].get<std::string>();
-//        std::string shortWeather = weatherMakeShort(weather);
         data.data = weather;
         std::cout << weather << '\n';
         std::string stringData;

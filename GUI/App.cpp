@@ -1,5 +1,4 @@
-#include <wx/wx.h>
-#include "RegisterWindow.hpp"
+#include "RegisterWindow.h"
 
 class EnterApp : public wxApp
 {
@@ -12,4 +11,4 @@ public:
     }
 };
 
-wxIMPLEMENT_APP(RegistrationApp);
+wxIMPLEMENT_APP(EnterApp);

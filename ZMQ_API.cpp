@@ -1,45 +1,4 @@
-#pragma once
-#include <iostream>
-#include <unistd.h>
-#include <zmq.hpp>
-#include <vector>
-#include <string>
-#include <nlohmann/json.hpp>
-
-enum class Types {
-    Register, Enter
-};
-
-class UserData {
-public:
-    Types type;
-    std::string login;
-    std::string password;
-    std::string username;
-    size_t id;
-
-};
-
-class ReplyFromServer {
-public:
-    int id_socket_listener;
-    int id_socket_writer;
-
-};
-
-class SimpleMessage {
-public:
-    std::string name;
-    std::string msg;
-
-};
-
-class Data {
-public:
-    std::string data;
-    std::string username;
-
-};
+#include "ZMQ_API.h"
 
 namespace zmq_api {
 
@@ -162,4 +121,3 @@ namespace zmq_api {
     }
 
 }
-

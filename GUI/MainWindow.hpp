@@ -2,7 +2,7 @@
 #include <iostream>
 #include <wx/wx.h>
 #include <nlohmann/json.hpp>
-#include "../Client.hpp"
+#include "../Client.h"
 
 class MainWindow : public wxFrame {
 public:
@@ -27,10 +27,15 @@ public:
     void OnButtonClick(wxCommandEvent& event) {
         outputData->Clear();
         wxString city = cityField->GetValue();
-        std::string weather = getWeatherData(city.ToStdString(), username);
-        // if (json[status] == "Ok")
-        WeatherData weatherData = weatherParse(weather);
-        outputData->AppendText(weatherDataToString(weatherData));
+        const std::string weather = Client::getWeatherData(city.ToStdString(), username);
+        nlohmann::json checkErrorJson = nlohmann::json::parse(weather);
+        bool status = (weather.size() > 70);
+        if (!status) {
+            wxMessageBox(wxT("Некоректно введенный город"), wxT(""), wxICON_ERROR | wxCENTRE);
+        } else {
+            WeatherData weatherData = weatherParse(weather);
+            outputData->AppendText(weatherDataToString(weatherData));
+        }
         cityField->Clear();
     }
 

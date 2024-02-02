@@ -1,75 +1,4 @@
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <nlohmann/json.hpp>
-
-class Time {
-public:
-    size_t hours   = 0;
-    size_t minutes = 0;
-    size_t seconds = 0;
-    std::string location;
-
-};
-
-class Date {
-public:
-    std::string month;
-    Time time;
-    size_t day  = 0;
-    std::string dayOfTheWeak;
-    size_t year = 0;
-
-};
-
-class Cords {
-public:
-    double latitude  = 0;
-    double longitude = 0;
-
-};
-
-class Temp {
-public:
-    double Kelvin;
-    double Celsius;
-    double Fahrenheit;
-    double feelsLike;
-    double maxTemperature;
-    double minTemperature;
-
-    Temp(double & tempKelvin, double &feelsLike, double &maxTemp, double &minTemp)
-    :
-    Kelvin(tempKelvin),
-    Celsius(Kelvin - 273.15),
-    Fahrenheit(Celsius * 9 / 5 + 32),
-    feelsLike(feelsLike),
-    maxTemperature(maxTemp),
-    minTemperature(minTemp) {}
-    Temp() = default;
-
-};
-
-class WeatherType {
-public:
-    std::string main;
-    std::string description;
-
-};
-
-class WeatherData {
-public:
-    Date date;
-    Cords cords;
-    Temp temperature;
-    WeatherType weatherType;
-
-};
-
-class HttpParser {
-public:
-
-};
+#include "HttpParse.h"
 
 Date dateParse(const std::string &s) {
     Date date;
@@ -104,6 +33,10 @@ WeatherData weatherParse(const std::string& request) {
 
     Temp temperature(deg, degFeels, degMax, degMin);
 
+    weatherData.visibility = json["visibility"].get<double>();
+    weatherData.windSpeed = json["wind"]["speed"].get<double>();
+    weatherData.city = json["name"].get<std::string>();
+    weatherData.country = json["sys"]["country"].get<std::string>();
     weatherData.weatherType = weatherType;
     weatherData.cords = cords;
     weatherData.temperature = temperature;
@@ -118,7 +51,7 @@ std::ostream& operator<<(std::ostream & out, const Time & time) {
 
 std::ostream& operator<<(std::ostream & out, const WeatherData & wd) {
     out << "Date: " << wd.date.dayOfTheWeak << ' ' << wd.date.day << ' '
-                    << wd.date.month << ' ' << wd.date.year << " " << wd.date.time << std::endl;
+        << wd.date.month << ' ' << wd.date.year << " " << wd.date.time << std::endl;
     out << "Type: " << wd.weatherType.main << " " << wd.weatherType.description << std::endl;
     out << "Temperature(Kelvin): " << wd.temperature.Kelvin << std::endl;
     out << "Temperature(Feels Like): " << wd.temperature.feelsLike;
@@ -128,12 +61,15 @@ std::ostream& operator<<(std::ostream & out, const WeatherData & wd) {
 
 std::string weatherDataToString(const WeatherData & wd) {
     std::string res;
-    res += "Weather Type:\n" +
-            wd.weatherType.main + ", " + wd.weatherType.description + '\n' +
-            "Temperature(Celsius):\n" +
-            std::to_string(wd.temperature.Celsius) + '\n' +
-            "Temperature(Feels Like):\n" +
-            std::to_string(wd.temperature.feelsLike - 273.15) + '\n';
+    res += "City: " + wd.city + ", " + wd.country + '\n'
+        + "Weather: " + wd.weatherType.main + '\n'
+        + "Weather description: " + wd.weatherType.description + '\n'
+        + "Temperature: " + std::to_string(wd.temperature.Celsius) + '\n'
+        + "Temperature(Feels like): " + std::to_string(wd.temperature.feelsLike) + '\n'
+        + "Temperature minimum: " + std::to_string(wd.temperature.minTemperature) + '\n'
+        + "Temperature maximum: " + std::to_string(wd.temperature.maxTemperature) + '\n'
+        + "Visibility: " + std::to_string(wd.visibility) + '\n'
+        + "Wind speed: " + std::to_string(wd.windSpeed) + '\n';
 
     return res;
 }
